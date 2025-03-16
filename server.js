@@ -44,7 +44,7 @@ async function getTemplate(contentPath) {
 
 // Helper function to find and read markdown content
 async function getContent(contentPath) {
-  console.log("🚀 ~ getContent ~ contentPath:", contentPath)
+  // console.log("🚀 ~ getContent ~ contentPath:", contentPath)
   try {
     // Check if the path exists
     await fs.access(contentPath);
@@ -80,12 +80,12 @@ async function getContent(contentPath) {
 async function renderPage(requestPath) {
   // Normalize path to prevent directory traversal
   requestPath = path.normalize(requestPath).replace(/^(\.\.(\/|\\|$))+/, '');
-  console.log("🚀 ~ renderPage ~ requestPath:", requestPath)
+  // console.log("🚀 ~ renderPage ~ requestPath:", requestPath)
   
   // Create full path to content directory
   let contentPath = path.join(CONTENT_DIR, requestPath);
-  console.log("🚀 ~ renderPage ~ CONTENT_DIR:", CONTENT_DIR)
-  console.log("🚀 ~ renderPage ~ contentPath:", contentPath)
+  // console.log("🚀 ~ renderPage ~ CONTENT_DIR:", CONTENT_DIR)
+  // console.log("🚀 ~ renderPage ~ contentPath:", contentPath)
   
   // If path doesn't include .md extension and doesn't end with /, assume it's a directory
   if (!contentPath.endsWith('.md') && !contentPath.endsWith('/')) {
@@ -99,7 +99,7 @@ async function renderPage(requestPath) {
   
   // Get template and content
   const htmlContent = await getContent(contentPath);
-  console.log("🚀 ~ renderPage ~ htmlContent:", htmlContent)
+  // console.log("🚀 ~ renderPage ~ htmlContent:", htmlContent)
   const template = await getTemplate(contentPath);
   
   // Replace template placeholder with content
@@ -132,11 +132,12 @@ async function renderPage(requestPath) {
 
 app.get('/api/content/*', async (req, res) => {
   try {
-    let requestPath = req.params[0] || 'index';
+    let requestPath = req.params[0] || '';
+    console.log("🚀 ~ app.get ~ req:", req)
     console.log("Fetching content for:", requestPath);
 
     const fullHtml = await renderPage(requestPath);
-    console.log("🚀 ~ API response content:", fullHtml);
+    // console.log("🚀 ~ API response content:", fullHtml);
 
     res.json({ 
       html: fullHtml,
@@ -192,6 +193,27 @@ async function buildContentStructure(dirPath, basePath = '') {
   
   return structure;
 }
+
+app.post('/api/create-folder', async (req, res) => {
+  const { folderName, parentPath } = req.body;
+
+  if (!folderName) {
+    return res.status(400).json({ error: 'Folder name is required' });
+  }
+
+  // Construct the new folder path
+  const newFolderPath = path.join(CONTENT_DIR, parentPath || '', folderName);
+
+  try {
+    // Check if folder already exists
+    await fs.access(newFolderPath).catch(() => fs.mkdir(newFolderPath, { recursive: true }));
+
+    res.status(201).json({ message: 'Folder created successfully', path: `${parentPath}/${folderName}` });
+  } catch (error) {
+    console.error('Error creating folder:', error);
+    res.status(500).json({ error: 'Failed to create folder' });
+  }
+});
 
 // IMPORTANT NEW PART: Serve compiled HTML for direct page requests
 app.get('*', async (req, res, next) => {

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 const ContentPage = () => {
-  const { "*": slug } = useParams(); // Capture dynamic route
+  const path = useParams();
   const [content, setContent] = useState('<p>Loading...</p>');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -10,14 +10,13 @@ const ContentPage = () => {
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const response = await fetch(`/api/content/${slug || ""}`);
+        const response = await fetch(`/api/content/${path.path || ""}`);
 
         if (!response.ok) {
           throw new Error("Content not found");
         }
 
         const data = await response.json();
-        console.log("🚀 ~ fetchContent ~ data:", data)
         setContent(data.html || '<p>Page not found</p>');
       } catch (err) {
         setError(err.message);
@@ -28,7 +27,7 @@ const ContentPage = () => {
     };
 
     fetchContent();
-  }, [slug]);
+  }, [path]);
 
   if (loading) return <div>Loading...</div>;
 
